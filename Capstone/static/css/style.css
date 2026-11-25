@@ -1,0 +1,153 @@
+/* Cyber Security Dark Theme */
+:root {
+    --bg-dark: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1f2937;
+    --border-color: #374151;
+    --cyber-blue: #38bdf8;
+    --cyber-cyan: #06b6d4;
+    --cyber-green: #10b981;
+    --cyber-red: #ef4444;
+    --cyber-orange: #f97316;
+    --cyber-yellow: #f59e0b;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+}
+
+/* Navbar */
+.navbar-cyber {
+    background-color: rgba(17, 24, 39, 0.95);
+    border-bottom: 1px solid var(--border-color);
+    backdrop-filter: blur(8px);
+}
+
+.brand-text {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: linear-gradient(135deg, var(--cyber-blue), var(--cyber-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Cards */
+.cyber-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.cyber-card:hover {
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.card-header-cyber {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--cyber-blue);
+    padding: 12px 18px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+/* Terminal Log Console */
+.terminal-window {
+    background-color: #030712;
+    border: 1px solid #1f2937;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #4ade80;
+    height: 240px;
+    overflow-y: auto;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.terminal-line {
+    margin-bottom: 4px;
+    line-height: 1.4;
+    word-break: break-all;
+}
+
+/* Severity Badges */
+.badge-critical {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.6);
+}
+
+.badge-high {
+    background-color: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+    border: 1px solid rgba(249, 115, 22, 0.6);
+}
+
+.badge-medium {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.6);
+}
+
+.badge-low {
+    background-color: rgba(6, 182, 212, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(6, 182, 212, 0.6);
+}
+
+.badge-info {
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #d1d5db;
+    border: 1px solid rgba(156, 163, 175, 0.4);
+}
+
+/* Custom Table */
+.cyber-table {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.cyber-table thead th {
+    background-color: #1f2937;
+    color: var(--cyber-blue);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cyber-table tbody td {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+/* Score Dial / Indicator */
+.score-box {
+    text-align: center;
+    padding: 18px;
+    border-radius: 12px;
+    background: radial-gradient(circle, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 1) 100%);
+    border: 1px solid var(--border-color);
+}
+
+.score-number {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+/* Progress bar pulse */
+.progress-bar-cyber {
+    background: linear-gradient(90deg, #38bdf8, #10b981);
+    transition: width 0.4s ease;
+}

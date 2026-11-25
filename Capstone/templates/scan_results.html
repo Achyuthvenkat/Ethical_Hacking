@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Results #{{ scan.id }} | Vulnerability Scanner{% endblock %}
+
+{% block content %}
+<!-- Top Header & Actions -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-secondary">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('history') }}" class="text-secondary">History</a></li>
+                <li class="breadcrumb-item active text-info" aria-current="page">Scan #{{ scan.id }}</li>
+            </ol>
+        </nav>
+        <h3 class="mb-0 text-light">Security Assessment Report: <span class="text-info">{{ scan.target_url }}</span></h3>
+        <small class="text-secondary">Executed on {{ scan.started_at }} | Completed at {{ scan.completed_at or 'In Progress' }}</small>
+    </div>
+    
+    <div class="mt-3 mt-md-0 d-flex gap-2">
+        <a href="{{ url_for('download_pdf', scan_id=scan.id) }}" class="btn btn-outline-info">
+            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF Report
+        </a>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+            <i class="bi bi-plus-circle me-1"></i> New Scan
+        </a>
+    </div>
+</div>
+
+<!-- Executive Summary Cards -->
+<div class="row g-3 mb-4">
+    <!-- Risk Score Card -->
+    <div class="col-md-3">
+        <div class="cyber-card p-3 h-100 text-center">
+            <h6 class="text-secondary mb-2">Overall Risk Score</h6>
+            <div class="score-number mb-1" style="color: {% if scan.risk_score >= 8.0 %}#ef4444{% elif scan.risk_score >= 5.0 %}#f97316{% elif scan.risk_score >= 2.5 %}#f59e0b{% else %}#10b981{% endif %};">
+                {{ scan.risk_score }} <span class="fs-6 text-secondary">/ 10</span>
+            </div>
+            <div>
+                {% if scan.risk_score >= 8.0 %}
+                    <span class="badge badge-critical px-3 py-1">CRITICAL RISK</span>
+                {% elif scan.risk_score >= 5.0 %}
+                    <span class="badge badge-high px-3 py-1">HIGH RISK</span>
+                {% elif scan.risk_score >= 2.5 %}
+                    <span class="badge badge-medium px-3 py-1">MODERATE RISK</span>
+                {% else %}
+                    <span class="badge badge-low px-3 py-1">LOW / SECURE</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Severity Counts Summary -->
+    <div class="col-md-9">
+        <div class="cyber-card p-3 h-100">
+            <h6 class="text-secondary mb-3">Vulnerabilities by Severity Breakdown (Total: {{ scan.total_findings }})</h6>
+            <div class="row text-center g-2">
+                <div class="col">
+                    <div class="p-2 border border-danger border-opacity-25 rounded bg-danger bg-opacity-10">
+                        <span class="d-block fs-4 fw-bold text-danger">{{ scan.critical_count }}</span>
+                        <small class="text-secondary">Critical</small>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-2 border border-warning border-opacity-25 rounded bg-warning bg-opacity-10">
+                        <span class="d-block fs-4 fw-bold text-warning">{{ scan.high_count }}</span>
+                        <small class="text-secondary">High</small>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-2 border border-info border-opacity-25 rounded bg-info bg-opacity-10">
+                        <span class="d-block fs-4 fw-bold text-info">{{ scan.medium_count }}</span>
+                        <small class="text-secondary">Medium</small>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-2 border border-primary border-opacity-25 rounded bg-primary bg-opacity-10">
+                        <span class="d-block fs-4 fw-bold text-primary">{{ scan.low_count }}</span>
+                        <small class="text-secondary">Low</small>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="p-2 border border-secondary border-opacity-25 rounded bg-secondary bg-opacity-10">
+                        <span class="d-block fs-4 fw-bold text-light">{{ scan.info_count }}</span>
+                        <small class="text-secondary">Informational</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs for Module 1, Module 2, and Headers -->
+<ul class="nav nav-tabs border-secondary mb-4" id="scanTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active text-info" id="vulns-tab" data-bs-toggle="tab" data-bs-target="#vulns" type="button">
+            <i class="bi bi-bug me-1"></i> Module 2: Detected Vulnerabilities ({{ vulnerabilities|length }})
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link text-light" id="recon-tab" data-bs-toggle="tab" data-bs-target="#recon" type="button">
+            <i class="bi bi-diagram-3 me-1"></i> Module 1: Reconnaissance & Infrastructure
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link text-light" id="headers-tab" data-bs-toggle="tab" data-bs-target="#headers" type="button">
+            <i class="bi bi-shield-check me-1"></i> Security Headers Audit
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="scanTabsContent">
+    <!-- TAB 1: DETECTED VULNERABILITIES -->
+    <div class="tab-pane fade show active" id="vulns" role="tabpanel">
+        {% if vulnerabilities %}
+            <div class="accordion" id="vulnAccordion">
+                {% for v in vulnerabilities %}
+                <div class="accordion-item cyber-card mb-3 border-secondary overflow-hidden">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button collapsed bg-dark text-light border-0" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                            <div class="d-flex flex-wrap align-items-center w-100 justify-content-between me-3">
+                                <div>
+                                    <span class="badge {% if v.severity == 'CRITICAL' %}badge-critical{% elif v.severity == 'HIGH' %}badge-high{% elif v.severity == 'MEDIUM' %}badge-medium{% elif v.severity == 'LOW' %}badge-low{% else %}badge-info{% endif %} me-2">
+                                        {{ v.severity }}
+                                    </span>
+                                    <strong class="text-light">{{ v.vuln_name }}</strong>
+                                </div>
+                                <span class="badge bg-secondary small">{{ v.module_source }}</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#vulnAccordion">
+                        <div class="accordion-body bg-dark border-top border-secondary">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <small class="text-secondary d-block">Affected URL</small>
+                                    <code class="text-info word-break">{{ v.affected_url }}</code>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-secondary d-block">Parameter / Injection Point</small>
+                                    <span class="text-light">{{ v.parameter or 'N/A' }}</span>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <small class="text-secondary d-block">Technical Evidence</small>
+                                    <pre class="bg-black p-2 rounded text-success small border border-secondary mb-0"><code>{{ v.evidence }}</code></pre>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <small class="text-secondary d-block">Security Impact</small>
+                                    <p class="text-light small mb-0">{{ v.impact }}</p>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <small class="text-secondary d-block">Remediation Recommendation</small>
+                                    <div class="p-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25 text-success small">
+                                        {{ v.remediation }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="cyber-card p-4 text-center">
+                <i class="bi bi-shield-check text-success fs-1"></i>
+                <h5 class="text-light mt-2">No High/Critical Vulnerabilities Detected</h5>
+                <p class="text-secondary small mb-0">
+                    The automated scan did not trigger database error patterns or unencoded canary reflection on the tested inputs.
+                    Always ensure layered defenses and manual review for sensitive applications.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- TAB 2: RECONNAISSANCE PROFILE -->
+    <div class="tab-pane fade" id="recon" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3"><i class="bi bi-hdd-network me-2"></i>Network & Infrastructure</h5>
+                    <table class="table table-sm cyber-table">
+                        <tr>
+                            <td class="text-secondary">Resolved IP:</td>
+                            <td class="text-light fw-bold">{{ recon.ip_address if recon else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Protocol:</td>
+                            <td class="text-light">{{ recon.protocol if recon else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">HTTP Response Status:</td>
+                            <td class="text-light">{{ recon.http_status if recon else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Server Banner:</td>
+                            <td class="text-info">{{ recon.server_banner if recon else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3"><i class="bi bi-file-earmark-lock me-2"></i>SSL / TLS Certificate</h5>
+                    <table class="table table-sm cyber-table">
+                        <tr>
+                            <td class="text-secondary">SSL Validity:</td>
+                            <td>
+                                {% if recon and recon.ssl_valid %}
+                                    <span class="badge bg-success">VALID CERTIFICATE</span>
+                                {% else %}
+                                    <span class="badge bg-danger">INSECURE / UNVERIFIED</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Certificate Issuer:</td>
+                            <td class="text-light">{{ recon.ssl_issuer if recon else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Expiration Date:</td>
+                            <td class="text-light">{{ recon.ssl_expiry if recon else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Cipher Suite:</td>
+                            <td class="text-secondary small">{{ recon.ssl_cipher if recon else 'N/A' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3"><i class="bi bi-stack me-2"></i>Fingerprinted Technologies</h5>
+                    {% if recon and recon.technologies %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tech in recon.technologies %}
+                                <span class="badge bg-dark border border-secondary text-info p-2">{{ tech }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-secondary small mb-0">No distinctive framework signatures detected.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3"><i class="bi bi-ethernet me-2"></i>Discovered Web Ports</h5>
+                    {% if recon and recon.open_ports %}
+                        <div class="table-responsive">
+                            <table class="table table-sm cyber-table">
+                                <thead>
+                                    <tr>
+                                        <th>Port</th>
+                                        <th>Service</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in recon.open_ports %}
+                                    <tr>
+                                        <td class="text-info fw-bold">{{ p.port }}</td>
+                                        <td>{{ p.service }}</td>
+                                        <td><span class="badge bg-success">{{ p.state }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-secondary small mb-0">No standard web service ports open or filtered by firewall.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: SECURITY HEADERS AUDIT -->
+    <div class="tab-pane fade" id="headers" role="tabpanel">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3 text-success"><i class="bi bi-check-circle me-2"></i>Present Security Headers</h5>
+                    {% if recon and recon.security_headers_present %}
+                        <table class="table table-sm cyber-table">
+                            {% for h, val in recon.security_headers_present.items() %}
+                            <tr>
+                                <td class="text-success fw-bold">{{ h }}</td>
+                                <td class="text-secondary small word-break">{{ val }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    {% else %}
+                        <p class="text-secondary small mb-0">No standard OWASP security headers were detected.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="cyber-card p-3 h-100">
+                    <h5 class="card-header-cyber mb-3 text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Missing Recommended Headers</h5>
+                    {% if recon and recon.security_headers_missing %}
+                        <div class="list-group list-group-flush bg-transparent">
+                            {% for m in recon.security_headers_missing %}
+                            <div class="list-group-item bg-transparent text-secondary border-secondary px-0">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-warning fw-bold">{{ m.header }}</span>
+                                    <span class="badge badge-{{ m.severity|lower }}">{{ m.severity }}</span>
+                                </div>
+                                <p class="small text-light mb-1">{{ m.description }}</p>
+                                <code class="small text-info d-block">{{ m.remediation }}</code>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-success small mb-0">All recommended OWASP security headers are present!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}404 Not Found | Vulnerability Scanner{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 fw-bold text-info">404</h1>
+    <h4 class="text-light mb-3">Target Endpoint or Resource Not Found</h4>
+    <p class="text-secondary">The requested scan ID or page could not be located on the server.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-info text-dark fw-semibold">
+        <i class="bi bi-house me-1"></i> Return to Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Web Vulnerability Scanner{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left Column: Scan Target Launcher -->
+    <div class="col-lg-7">
+        <div class="cyber-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="mb-0 text-info">
+                    <i class="bi bi-bullseye me-2"></i>Initiate Security Scan
+                </h4>
+                <span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-25">3 Modules Active</span>
+            </div>
+            
+            <p class="text-secondary small">
+                Configure your target endpoint below. The scanner will sequentially execute 
+                <b>Module 1 (Reconnaissance)</b>, <b>Module 2 (SQLi & XSS Detection)</b>, and <b>Module 3 (Risk & PDF Reporting)</b>.
+            </p>
+
+            <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
+
+            <form id="scanForm">
+                <div class="mb-3">
+                    <label for="targetUrl" class="form-label text-light fw-semibold">Target Website URL</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary text-secondary">
+                            <i class="bi bi-globe"></i>
+                        </span>
+                        <input type="url" class="form-control bg-dark text-light border-secondary" id="targetUrl" 
+                               placeholder="https://example.com or http://127.0.0.1:3000" required>
+                    </div>
+                    <div class="form-text text-secondary">
+                        Enter full URL including schema (<code class="text-info">http://</code> or <code class="text-info">https://</code>).
+                    </div>
+                </div>
+
+                <!-- Ethical Disclaimer & Authorization -->
+                <div class="card bg-dark border-warning border-opacity-50 p-3 mb-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="authConfirmed" required>
+                        <label class="form-check-label small text-light" for="authConfirmed">
+                            <b class="text-warning"><i class="bi bi-shield-exclamation me-1"></i>Ethical Authorization Confirmation:</b>
+                            I hereby confirm that I own this target web application or possess explicit written authorization to perform non-destructive security auditing on this domain.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" id="startScanBtn" class="btn btn-info py-2 fw-semibold text-dark">
+                        <i class="bi bi-shield-check me-2"></i>Launch Security Assessment
+                    </button>
+                </div>
+            </form>
+
+            <!-- Live Progress & Console Window (Hidden by default) -->
+            <div id="progressSection" class="mt-4 d-none">
+                <hr class="border-secondary my-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold text-info" id="currentStepLabel">Initializing Scan...</span>
+                    <span class="badge bg-secondary" id="scanBadgeStatus">ACTIVE</span>
+                </div>
+                
+                <div class="progress bg-dark border border-secondary mb-3" style="height: 18px;">
+                    <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated progress-bar-cyber" 
+                         role="progressbar" style="width: 5%;">5%</div>
+                </div>
+
+                <label class="text-secondary small mb-1"><i class="bi bi-terminal me-1"></i>Live Assessment Terminal Logs</label>
+                <div class="terminal-window" id="terminalLogs">
+                    <div class="terminal-line text-muted">Awaiting task pipeline startup...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: System Status & Quick Summary -->
+    <div class="col-lg-5">
+        <!-- Module Architecture Overview -->
+        <div class="cyber-card p-3 mb-4">
+            <h5 class="text-light mb-3"><i class="bi bi-layers-half text-info me-2"></i>Assessment Pipeline</h5>
+            
+            <div class="list-group list-group-flush bg-transparent">
+                <div class="list-group-item bg-transparent text-secondary border-secondary px-0">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1 text-light">Module 1: Reconnaissance</h6>
+                        <span class="badge bg-info text-dark">Network & Transport</span>
+                    </div>
+                    <small>DNS resolution, SSL/TLS certificate validity, HTTP security headers, and safe web port profiling.</small>
+                </div>
+
+                <div class="list-group-item bg-transparent text-secondary border-secondary px-0">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1 text-light">Module 2: Vulnerability Detection</h6>
+                        <span class="badge bg-warning text-dark">Application Layer</span>
+                    </div>
+                    <small>Safe SQL syntax error detection and harmless canary-based reflected XSS auditing.</small>
+                </div>
+
+                <div class="list-group-item bg-transparent text-secondary border-secondary px-0">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1 text-light">Module 3: Reporting & Advisory</h6>
+                        <span class="badge bg-success text-dark">Executive PDF</span>
+                    </div>
+                    <small>Risk aggregation, historical persistence, developer remediation advice, and PDF report downloads.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Scans Mini Table -->
+        <div class="cyber-card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0 text-light"><i class="bi bi-clock-history text-info me-2"></i>Recent Scans</h6>
+                <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline-secondary">View All</a>
+            </div>
+
+            {% if recent_scans %}
+            <div class="table-responsive">
+                <table class="table table-sm cyber-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Target</th>
+                            <th>Findings</th>
+                            <th>Risk</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in recent_scans %}
+                        <tr>
+                            <td class="text-truncate" style="max-width: 140px;" title="{{ s.target_url }}">{{ s.target_url }}</td>
+                            <td><span class="badge bg-secondary">{{ s.total_findings }}</span></td>
+                            <td>
+                                {% if s.risk_score >= 8.0 %}
+                                    <span class="badge badge-critical">{{ s.risk_score }}</span>
+                                {% elif s.risk_score >= 5.0 %}
+                                    <span class="badge badge-high">{{ s.risk_score }}</span>
+                                {% elif s.risk_score >= 2.5 %}
+                                    <span class="badge badge-medium">{{ s.risk_score }}</span>
+                                {% else %}
+                                    <span class="badge badge-low">{{ s.risk_score }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_scan', scan_id=s.id) }}" class="btn btn-sm btn-outline-info py-0 px-2">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-secondary small mb-0 mt-2">No previous assessments recorded yet. Run your first scan!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

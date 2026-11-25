@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment History | Vulnerability Scanner{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-0 text-light"><i class="bi bi-clock-history text-info me-2"></i>Scan Assessment History</h3>
+        <small class="text-secondary">Historical logs and auditable vulnerability records stored in SQLite database.</small>
+    </div>
+    <a href="{{ url_for('index') }}" class="btn btn-info text-dark fw-semibold">
+        <i class="bi bi-plus-circle me-1"></i> New Assessment
+    </a>
+</div>
+
+<div class="cyber-card p-3">
+    {% if scans %}
+    <div class="table-responsive">
+        <table class="table cyber-table align-middle">
+            <thead>
+                <tr>
+                    <th>Scan ID</th>
+                    <th>Target URL</th>
+                    <th>Status</th>
+                    <th>Started At</th>
+                    <th>Findings</th>
+                    <th>Risk Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in scans %}
+                <tr>
+                    <td class="text-info fw-bold">#{{ s.id }}</td>
+                    <td class="text-light fw-semibold text-truncate" style="max-width: 250px;">{{ s.target_url }}</td>
+                    <td>
+                        {% if s.scan_status == 'COMPLETED' %}
+                            <span class="badge bg-success">COMPLETED</span>
+                        {% elif s.scan_status == 'RUNNING' %}
+                            <span class="badge bg-primary">RUNNING</span>
+                        {% else %}
+                            <span class="badge bg-danger">FAILED</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-secondary small">{{ s.started_at }}</td>
+                    <td>
+                        <span class="badge bg-dark border border-secondary text-light px-2 py-1">
+                            {{ s.total_findings }} Issues
+                        </span>
+                    </td>
+                    <td>
+                        {% if s.risk_score >= 8.0 %}
+                            <span class="badge badge-critical px-2 py-1">{{ s.risk_score }} (Critical)</span>
+                        {% elif s.risk_score >= 5.0 %}
+                            <span class="badge badge-high px-2 py-1">{{ s.risk_score }} (High)</span>
+                        {% elif s.risk_score >= 2.5 %}
+                            <span class="badge badge-medium px-2 py-1">{{ s.risk_score }} (Medium)</span>
+                        {% else %}
+                            <span class="badge badge-low px-2 py-1">{{ s.risk_score }} (Low)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('view_scan', scan_id=s.id) }}" class="btn btn-outline-info" title="View Full Results">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('download_pdf', scan_id=s.id) }}" class="btn btn-outline-secondary" title="Download PDF Report">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" onclick="deleteScan({{ s.id }})" title="Delete Record">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-inbox text-secondary fs-1"></i>
+        <h5 class="text-light mt-3">No Security Scans Found</h5>
+        <p class="text-secondary small">Launch a security assessment from the dashboard to populate your history.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-info text-dark fw-semibold mt-2">Start Scan</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteScan(scanId) {
+    if (!confirm(`Are you sure you want to delete scan record #${scanId}? This cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/scan/delete/${scanId}`, {
+            method: 'POST'
+        });
+        const res = await response.json();
+        if (res.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to delete scan: ' + (res.message || 'Unknown error'));
+        }
+    } catch (e) {
+        alert('Network error while deleting: ' + e.message);
+    }
+}
+</script>
+{% endblock %}
